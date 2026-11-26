@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tumbler: das tägliche Schloss</title>
+<title>WrdLock: das tägliche Schloss</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#dfe7e2;--ink:#0f1b1d;--mut:#4d5f61;--brass:#8a6410;--gold:#e0b04a;--red:#b73a25;--grn:#1d7a62;--tile:#eef3f0;color-scheme:light;
@@ -239495,13 +239495,13 @@ zürntet
 <script>
 (()=>{
 const $=s=>document.querySelector(s),app=$('#app');
-const EPOCH=Date.UTC(2026,10,25),DAY=864e5,KEY='tumbler:v4';
+const EPOCH=Date.UTC(2026,10,25),DAY=864e5,KEY='wrdlock:v1';
 const utcDay=()=>Math.floor((Date.now()-EPOCH)/DAY)+1;
 const dateOf=n=>new Date(EPOCH+(n-1)*DAY).toLocaleDateString('de-DE',{timeZone:'UTC',weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const fmt=ms=>{const s=Math.max(0,Math.floor(ms/1000));return [s/3600|0,s/60%60|0,s%60].map(x=>String(x).padStart(2,'0')).join(':')};
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let S={days:{},prog:{},mute:false,mode:'m'};
-try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+try{const r=localStorage.getItem(KEY)||localStorage.getItem('tumbler:v4');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 /* ---------- Ton ---------- */
@@ -239531,13 +239531,6 @@ const sfx={
 /* ---------- Regeln (Stifte) ---------- */
 const lw=t=>t.toLowerCase(),VO='aeiouäöü',vc=w=>[...w].filter(c=>VO.includes(c)).length;
 function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const TIERS=[['mond','brot','haus','hund','glas','tisch','baum','buch','fisch','stern','sonne','apfel','wald','mund','zahn','feld','kerze','boot','park','stuhl'],
-['katze','wolke','regen','licht','insel','blume','tasche','kirche','schule','wiese','nacht','sturm','straße','bruder','kuchen','pferd','honig','blatt','mutter','vater'],
-['sommer','garten','kaffee','wasser','winter','brücke','herbst','schiff','bäcker','zimmer','mädchen','wetter','sonntag','teller','löffel','stunde','kirsche','banane'],
-['fenster','spiegel','zitrone','gewitter','laterne','schatten','schlafen','märchen','geschenk','bahnhof','teppich','sessel','handtuch','schulbus','kuscheln','bergsee'],
-['frühstück','feuerwerk','wasserfall','leuchtturm','regenbogen','abenteuer','geschichte','abendessen','spielplatz','regenjacke','kartoffel','schlüssel','luftballon','badezimmer','geburtstag','kühlschrank'],
-['sonnenschein','kaffeetasse','schokolade','nachtigall','eichhörnchen','schlüsselbund','sonnenblume','blumenwiese','bücherregal','weihnachten','schreibtisch','kinderwagen','zahnbürste','schneemann','sonnenbrille','hochzeitstag','blumenstrauß'],
-['schmetterling','sternschnuppe','wasserflasche','regenschirm','kaffeemaschine','sonnenaufgang','weihnachtsbaum','staubsauger','kleiderschrank','regenmantel','schneeflocke','sonnenschirm']];
 const CBI=['er','en','ch','ei','au','ie','st','nd','ge','te','el','re','ne','se','le','be','in','an','ck'],CEND=['er','en','el','ch','ng','nd','st','te','ne','se','le','re','ge','ee','ck','ft','ht','ig','ie'],HARD=new Set(['bi','pos','cnt','dist','ebi']);
 const COMMON='ernstldgm',RARE='kbpfgmwzvüöäß';
 const cntOf=(x,c)=>[...x].filter(v=>v===c).length;
@@ -239562,26 +239555,39 @@ const MODES={
  m:{name:'Mittel',tiers:[0,0,1,2,2,3,4],K:[3,3,3,3,3,4,4],fix:['start','len'],fixN:4,secs:30,hm:()=>1},
  h:{name:'Schwer',tiers:[0,1,2,3,4,5,5],K:[3,3,3,3,4,4,4],fix:['start','len'],fixN:3,secs:30,hm:i=>i>=5?2:1}};
 const maxOf=m=>MODES[m].K.reduce((a,b)=>a+b)*40+7*(100+2*MODES[m].secs);
+/* Andromeda: seed-basierter Generator, zieht Wörter und zählt Treffer direkt im Wörterbuch */
 const ALT={end:'ebi'},EXC={start:'sbi',sbi:'start',end:'ebi',ebi:'end',dbl:'dist',dist:'dbl',cnt:'dbl'};
 const FIX={e:[['len','start','end'],['len','sbi','vow'],['start','end','vow'],['len','end','bi'],['sbi','ebi','len'],['start','vow','dist'],['len','bi','sbi']],m:[['len','start'],['len','end'],['len','sbi'],['len','ebi']]};FIX.h=FIX.m;
-const MOFF={e:0,m:1,h:2};
-function makeDay(seed,m,day){const R=rng(seed),D=MODES[m],used=new Set(),cnt={};let prevFix=-1,prevKeys=new Set();
- return D.tiers.map((ti,i)=>{const t=TIERS[ti],L=t.length;let w;
-  if(day){const k=cnt[ti]||0;cnt[ti]=k+1;const per=D.tiers.filter(x=>x===ti).length,pos=(day-1)*per+k,gcd=(a,b)=>b?gcd(b,a%b):a;let st=Math.round(L*.618);while(gcd(st,L)!==1)st++;
-   let idx=(pos*st+ti*5+MOFF[m]*3)%L;w=t[idx];for(let g=0;used.has(w)&&g<L;g++){idx=(idx+1)%L;w=t[idx]}}
-  else{do{w=t[Math.floor(R()*L)]}while(used.has(w))}
-  used.add(w);
-  let f=[];if(i<D.fixN){const O=FIX[m];let fi=Math.floor(R()*O.length);if(fi===prevFix)fi=(fi+1)%O.length;prevFix=fi;f=O[fi]}
-  const rest=Object.keys(K_).filter(k=>!f.includes(k));
-  for(let j=rest.length-1;j>0;j--){const q=Math.floor(R()*(j+1));[rest[j],rest[q]]=[rest[q],rest[j]]}
-  rest.sort((a,b)=>prevKeys.has(a)-prevKeys.has(b));
-  const cons=[],u=new Set();
-  const hm=D.hm(i);let hc=0;
-  for(const k of f.concat(rest)){if(u.has(EXC[k]))continue;let kk=k,c=K_[k](w,R);if(!c&&ALT[k]){kk=ALT[k];c=K_[kk](w,R)}if(c&&HARD.has(kk)&&hc>=hm)continue;if(c){cons.push(c);u.add(k);if(HARD.has(kk))hc++}if(cons.length===D.K[i])break}
-  prevKeys=new Set([...u].filter(k=>!f.includes(k)));
-  return{word:w,cons}})}
+const RANGE={e:[4,7,30,0],m:[5,8,15,0],h:[6,11,8,150]};
+let BK=null;
+function buckets(){if(BK)return BK;BK={};for(const w of DICT){const n=w.length;if(n>=4&&n<=12&&/^[a-zäöüß]+$/.test(w)&&!/[^aeiouäöüy]{5}|[aeiouäöüy]{4}|(.)\1\1/.test(w))(BK[n]=BK[n]||[]).push(w)}return BK}
+const FAMN={e:10,m:6,h:4};
+function lb(x){let a=0,b=WARR.length;while(a<b){const c=(a+b)>>1;if(WARR[c]<x)a=c+1;else b=c}return a}
+const fam=w=>{const p=w.slice(0,Math.max(4,w.length-2));return lb(p+'\uffff')-lb(p)};
+const PRI={len:0,start:1,sbi:1,end:2,ebi:2};
+function count(cons,w,cap){const cs=cons.slice().sort((a,b)=>(PRI[a.k]??3)-(PRI[b.k]??3)),src=cons.some(c=>c.k==='len')?(buckets()[w.length]||[]):DICT;let n=0;
+ for(const x of src){if(!x)continue;let ok=true;for(const c of cs)if(!c.t(x)){ok=false;break}if(ok&&++n>cap)break}return n}
+function examples(cons,w){const cs=cons.slice().sort((a,b)=>(PRI[a.k]??3)-(PRI[b.k]??3)),src=cons.some(c=>c.k==='len')?(buckets()[w.length]||[]):DICT,hit=[];
+ for(const x of src){if(!x)continue;let ok=true;for(const c of cs)if(!c.t(x)){ok=false;break}if(ok&&hit.push(x)>=3000)break}
+ return hit.map(x=>[lb(x+'\uffff')-lb(x),x]).sort((a,b)=>b[0]-a[0]).slice(0,3).map(a=>a[1])}
+function consFor(w,R,i,D,m,st){let f=[],fi=st.fi;
+ if(i<D.fixN){const O=FIX[m];fi=Math.floor(R()*O.length);if(fi===st.fi)fi=(fi+1)%O.length;f=O[fi]}
+ const rest=Object.keys(K_).filter(k=>!f.includes(k));
+ for(let j=rest.length-1;j>0;j--){const q=Math.floor(R()*(j+1));[rest[j],rest[q]]=[rest[q],rest[j]]}
+ rest.sort((a,b)=>st.keys.has(a)-st.keys.has(b));
+ const cons=[],u=new Set(),hm=D.hm(i);let hc=0;
+ for(const k of f.concat(rest)){if(u.has(EXC[k]))continue;let kk=k,c=K_[k](w,R);if(!c&&ALT[k]){kk=ALT[k];c=K_[kk](w,R)}if(c&&HARD.has(kk)&&hc>=hm)continue;if(c){cons.push({...c,k:kk});u.add(k);if(HARD.has(kk))hc++}if(cons.length===D.K[i])break}
+ return{cons,fi,keys:new Set([...u].filter(k=>!f.includes(k)))}}
+function makeDay(seed,m){const R=rng(seed),D=MODES[m],[lo,hi,mn,mx]=RANGE[m],B=buckets(),used=new Set();let st={fi:-1,keys:new Set()};
+ return [...Array(7).keys()].map(i=>{const base=lo+(hi-lo)*i/6;let pick=null,fb=null;
+  for(let a=0;a<120&&!pick;a++){const L=Math.max(lo,Math.min(hi,Math.round(base+R()*2-1))),bk=B[L];if(!bk||!bk.length)continue;
+   const w=bk[Math.floor(R()*bk.length)];if(used.has(w)||fam(w)<FAMN[m])continue;
+   const r=consFor(w,R,i,D,m,st);if(r.cons.length<D.K[i])continue;
+   const n=count(r.cons,w,mx?mx+1:1e9),o={word:w,cons:r.cons,n,st:{fi:r.fi,keys:r.keys}};
+   if(n>=mn&&(!mx||n<=mx))pick=o;else if(n>=1&&(!fb||Math.abs(n-mn)<Math.abs(fb.n-mn)))fb=o}
+  const w0=B[lo][0];pick=pick||fb||{word:w0,cons:[{...K_.len(w0),k:'len'}],n:1,st};used.add(pick.word);st=pick.st;return{word:pick.word,cons:pick.cons,n:pick.n,ex:examples(pick.cons,pick.word)}})}
 const dailySeed=(n,m)=>(n*2654435761^0x9e3779b9)+{e:101,m:202,h:303}[m];
-/*DICT*/const DICT=new Set(($('#wl')?$('#wl').textContent:'').split('\n')),FUG=['s','es','n','en','e','er','ens'],memo=new Map();
+/*DICT*/const WARR=($('#wl')?$('#wl').textContent:'').split('\n'),DICT=new Set(WARR),FUG=['s','es','n','en','e','er','ens'],memo=new Map();
 function isWord(x){if(x.length<3)return false;if(DICT.has(x))return true;if(x.length<=9)return false;
  if(memo.has(x))return memo.get(x);const n=x.length,ok=new Array(n+1).fill(false);ok[0]=true;
  for(let i=0;i<n;i++){if(!ok[i])continue;for(let j=i+3;j<=n;j++){const s=x.slice(i,j);let h=DICT.has(s);
@@ -239599,11 +239605,11 @@ function stats(m){const all=Object.entries(S.days).map(([k,d])=>({n:parseInt(k),
 const sq=r=>`<i class="sq ${r.set===r.total?'g':r.set===0?'r':'y'}"></i>`,sqs=rs=>rs.map(sq).join('');
 const glyph=r=>r.set===r.total?'🟩':r.set===0?'🟥':'🟨';
 const grade=(t,m)=>{const q=t/maxOf(m);return q>=.75?'Meister der Stifte':q>=.5?'Schlossknacker':q>=.3?'Dietrichführer':q>=.12?'Lehrling':'Rostige Hände'};
-const shareText=(n,rs,t,m)=>`Tumbler #${n} ${MODES[m].name} · ${t}\n${rs.map(glyph).join(' ')}\nStifte ${rs.reduce((a,r)=>a+r.set,0)}/${rs.reduce((a,r)=>a+r.total,0)}`;
+const shareText=(n,rs,t,m)=>`WrdLock #${n} ${MODES[m].name} · ${t}\n${rs.map(glyph).join(' ')}\nStifte ${rs.reduce((a,r)=>a+r.set,0)}/${rs.reduce((a,r)=>a+r.total,0)}`;
 
 /* ---------- Ansichten ---------- */
 let view='home',G=null,timer=null,loaded=utcDay();
-const WM=c=>`<h1 class="wm ${c}" aria-label="Tumbler">${[...'TUMBLER'].map((ch,i)=>`<span style="--i:${i};--o:${[14,-6,18,0,10,-8,16][i]}px">${ch}</span>`).join('')}</h1>`;
+const WM=c=>`<h1 class="wm ${c}" aria-label="WrdLock">${[...'WrdLock'].map((ch,i)=>`<span style="--i:${i};--o:${[14,-6,18,0,10,-8,16][i]}px">${ch}</span>`).join('')}</h1>`;
 const tickCd=()=>{const c=$('#cd');if(c)c.textContent=fmt(EPOCH+utcDay()*DAY-Date.now())};
 
 function home(){view='home';clearInterval(timer);const n=utcDay(),m=S.mode,done=S.days[n+m],st=stats(m),resume=S.prog[m]&&S.prog[m].n===n;
@@ -239615,7 +239621,7 @@ function home(){view='home';clearInterval(timer);const n=utcDay(),m=S.mode,done=
  <button class="big" id="go">${done?'Heutige Auswertung ansehen':resume?'Heutiges Schloss fortsetzen':'Heutiges Schloss knacken'}</button>
  <button class="alt" id="pr">Übungsschloss (zählt nicht)</button>
  <ol class="rules"><li>Wähle Leicht, Mittel oder Schwer. Jede Stufe ist ein eigenes Tagesschloss mit eigener Wertung.</li>
- <li>Jedes Schloss hat 3 bis 5 Stifte: Hinweise auf ein verstecktes Wort. Schreibe ein echtes Wort, das alle Stifte erfüllt (es gibt immer eins). Pro Stift 40 Punkte. Sind alle gesetzt, öffnet das Schloss: +60 und 2 Punkte pro Restsekunde. Wer genau das Lösungswort trifft, bekommt +40 extra.</li>
+ <li>Jedes Schloss hat 3 bis 5 Stifte: Hinweise auf ein verstecktes Wort. Schreibe ein echtes Wort, das alle Stifte erfüllt (es gibt immer eins). Pro Stift 40 Punkte. Sind alle gesetzt, öffnet das Schloss: +60 und 2 Punkte pro Restsekunde. Wer genau das Zielwort trifft, das sich der Generator ausgesucht hat, bekommt +40 extra.</li>
  <li>30 Sekunden pro Schloss (Leicht: 35). Dein Wort wird sofort gegen ein Wörterbuch mit über 200.000 deutschen Wortformen geprüft (spielwoerter, CC0). Gibt es das Wort nicht, kannst du es nicht abgeben. Wörter über 9 Buchstaben zählen, wenn sie sich aus Wörterbuchwörtern zusammensetzen. Wer mittendrin geht, verliert das Schloss.</li></ol>
  <div class="stats"><div><b>${st.streak}</b><span>Serie</span></div><div><b>${st.best}</b><span>Bestwert</span></div><div><b>${st.avg}</b><span>Schnitt</span></div><div><b>${st.played}</b><span>Schlösser</span></div><div><b>${st.total}</b><span>Punkte</span></div></div>
  <h3>Logbuch (nur dieses Gerät)</h3>
@@ -239649,7 +239655,7 @@ function render(){const c=G.ch[G.i],done=G.locked,r=G.rounds[G.i];
  ${done?`<p class="sent">${r.text?esc(r.text):'Kein Wort abgegeben.'}</p>
  <div class="fb ${r.set===r.total?'ok':r.set?'':'no'}"><b>${r.set===r.total?'Schloss offen':r.set?'Teilweise gesetzt':'Das Schloss klemmt'} ${r.pts>0?'+':''}${r.pts}</b>
  <span>${r.set} von ${r.total} Stifte: ${r.pins}${r.set===r.total?` · Öffnen: +${r.open} · Volltreffer: +${r.style}`:''}</span>
- ${r.note?`<span style="color:var(--red)">${r.note}</span>`:''}<span style="color:var(--mut)">Mögliches Lösungswort: ${c.word}</span><button class="big" id="nx">${G.i===6?'Auswertung öffnen':'Nächstes Schloss'}</button></div>`
+ ${r.note?`<span style="color:var(--red)">${r.note}</span>`:''}<span style="color:var(--mut)">Treffer im Wörterbuch: ${c.n} · zum Beispiel ${c.ex.join(', ')}</span><button class="big" id="nx">${G.i===6?'Auswertung öffnen':'Nächstes Schloss'}</button></div>`
  :`<input id="tx" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Dein Wort …"><p id="st" class="st" aria-live="polite"></p><button class="big" id="sub">Schloss öffnen</button>`}`}
 
 const setSt=(t,c)=>{const e=$('#st');if(e){e.textContent=t;e.className='st '+(c||'')}};

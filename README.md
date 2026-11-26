@@ -1,4 +1,4 @@
-# Tumbler: das tägliche Schloss
+# WrdLock: das tägliche Schloss
 
 Ein tägliches Browser-Wortspiel. Jeder Spieler bekommt am selben Tag dieselben sieben Schlösser. Jedes Schloss hat 3 bis 5 Stifte, das sind Hinweise auf ein verstecktes deutsches Wort. Du schreibst ein echtes Wort, das alle Stifte erfüllt.
 
@@ -17,9 +17,9 @@ Ein tägliches Browser-Wortspiel. Jeder Spieler bekommt am selben Tag dieselben 
 
 | Stufe | Zeit | Stifte pro Schloss | Wortlänge |
 |---|---|---|---|
-| Leicht | 35 s | immer 3 | kurze Wörter |
-| Mittel | 30 s | 3 bis 4 | kurze bis mittlere Wörter |
-| Schwer | 30 s | 3 bis 4 | auch längere Wörter |
+| Leicht | 35 s | immer 3 | 4 bis 7 Buchstaben |
+| Mittel | 30 s | 3 bis 4 | 5 bis 8 Buchstaben |
+| Schwer | 30 s | 3 bis 4 | 6 bis 11 Buchstaben |
 
 Pro Schloss gibt es höchstens einen schweren Hinweis (Buchstabenpaar, Position, Häufigkeit, verschiedene Buchstaben, Endung). Nur die letzten Schlösser der Stufe Schwer dürfen zwei haben. Es werden nur gängige Buchstabenpaare wie er, en, ch, ei, au, st gefragt.
 
@@ -29,7 +29,7 @@ Unten rechts gibt es Schalter für Hell/Dunkel und Ton an/aus. Beide Einstellung
 
 - 40 Punkte pro gesetztem Stift.
 - Sind alle Stifte gesetzt, öffnet das Schloss: +60 und 2 Punkte pro Restsekunde.
-- Wer genau das Lösungswort trifft: +40 Volltreffer.
+- Wer genau das Zielwort des Generators trifft: +40 Volltreffer (selten, da es meist viele Lösungen gibt).
 - Ein Wort ohne Treffer oder ein Timeout gibt 0 Punkte.
 
 ## Tägliche Herausforderung
@@ -41,12 +41,12 @@ Unten rechts gibt es Schalter für Hell/Dunkel und Ton an/aus. Beide Einstellung
 
 ## Statistik und Teilen
 
-Alles wird lokal im Browser gespeichert (`localStorage`, Schlüssel `tumbler:v4`): Serie, Bestwert, Schnitt, Anzahl Schlösser, Gesamtpunkte, Logbuch und eine **lokale** Rangliste. Es gibt keine globale Rangliste und keine Spielerdatenbank.
+Alles wird lokal im Browser gespeichert (`localStorage`, Schlüssel `wrdlock:v1`): Serie, Bestwert, Schnitt, Anzahl Schlösser, Gesamtpunkte, Logbuch und eine **lokale** Rangliste. Es gibt keine globale Rangliste und keine Spielerdatenbank.
 
 Nach dem Spiel gibt es einen spoilerfreien Text zum Kopieren, zum Beispiel:
 
 ```
-Tumbler #1 Mittel · 1240
+WrdLock #1 Mittel · 1240
 🟩 🟩 🟨 🟩 🟥 🟨 🟩
 Stifte 19/25
 ```
@@ -75,7 +75,17 @@ Die Wortprüfung läuft komplett lokal, ohne KI, ohne API-Schlüssel und ohne Ne
 2. Wörterbuch als Textblock
 3. Spiellogik: Hinweis-Generator mit Seed, Wortprüfung, Punkte, Statistik, Ansichten, Ton (Web Audio, abschaltbar), Eingabe
 
-Die Schlösser entstehen deterministisch: Ein Seed aus Tagesnummer und Stufe wählt pro Runde ein verstecktes Wort aus einer Wortleiter (kurz bis lang) und leitet daraus die Hinweise ab. Dadurch hat jedes Schloss garantiert eine Lösung.
+## Andromeda: der Generator
+
+Die Schlösser werden nicht aus festen Listen gewählt, sondern vom Generator „Andromeda“ direkt aus dem Wörterbuch erzeugt:
+
+1. Ein Seed aus Tagesnummer und Stufe steuert einen deterministischen Zufallsgenerator. Gleiches Datum bedeutet gleiche Schlösser für alle.
+2. Pro Runde wird eine Wortlänge passend zur Stufe gewählt (wächst von Runde 1 bis 7) und ein Zielwort aus den rund 240.000 Wörtern gezogen. Wiederholungen am selben Tag sind ausgeschlossen.
+3. Aus dem Zielwort werden Hinweise abgeleitet (mit Regeln: höchstens ein schwerer Hinweis pro Schloss, nur gängige Buchstabenpaare, keine widersprüchlichen oder doppelten Hinweise).
+4. Der Generator zählt dann im Wörterbuch, wie viele Wörter alle Hinweise erfüllen. Nur Schlösser mit genug Treffern (Leicht ab 30, Mittel ab 15, Schwer ab 8, Schwer höchstens 150) werden genommen, sonst wird neu gezogen. So gibt es immer viele echte Lösungen.
+5. Nach jedem Schloss siehst du die Trefferzahl und drei Beispiele.
+
+Hinweis: Die Wortliste enthält keine Häufigkeiten. Das Zielwort kann deshalb ein seltenes Wort sein. Lösen kannst du jedes Schloss mit jedem passenden Wörterbuchwort.
 
 ## Auf GitHub veröffentlichen
 
